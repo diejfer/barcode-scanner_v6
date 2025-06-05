@@ -22,6 +22,8 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
   private _torchState = false;
   private _video: HTMLVideoElement | null = null;
   private _options: ScanOptions | null = null;
+  private _continuousCallback: ((result: ScanResult, err?: any) => void) | null = null;
+  private _isContinuous = false;
   private _backgroundColor: string | null = null;
   private _facingMode: MediaTrackConstraints = BarcodeScannerWeb._BACK;
 
@@ -43,6 +45,8 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
 
   async startScan(_options: ScanOptions): Promise<ScanResult> {
     this._options = _options;
+    this._isContinuous = false;
+    this._continuousCallback = null;
     this._formats = [];
     _options?.targetedFormats?.forEach((format) => {
       const formatIndex = Object.keys(BarcodeFormat).indexOf(format);
@@ -63,8 +67,35 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
     }
   }
 
-  async startScanning(_options: ScanOptions, _callback: any): Promise<string> {
-    throw this.unimplemented('Not implemented on web.');
+  async startScanning(
+    _options: ScanOptions,
+    _callback: (result: ScanResult, err?: any) => void,
+  ): Promise<string> {
+    this._options = _options;
+    this._isContinuous = true;
+    this._continuousCallback = _callback;
+    this._formats = [];
+    _options?.targetedFormats?.forEach((format) => {
+      const formatIndex = Object.keys(BarcodeFormat).indexOf(format);
+      if (formatIndex >= 0) {
+        this._formats.push(0);
+      } else {
+        console.error(format, 'is not supported on web');
+      }
+    });
+    if (!!_options?.cameraDirection) {
+      this._facingMode =
+        _options.cameraDirection === CameraDirection.BACK
+          ? BarcodeScannerWeb._BACK
+          : BarcodeScannerWeb._FORWARD;
+    }
+    const video = await this._getVideoElement();
+    if (video) {
+      await this._startContinuousReader(_callback);
+      return '0';
+    } else {
+      throw this.unavailable('Missing video element');
+    }
   }
 
   async pauseScanning(): Promise<void> {
@@ -75,7 +106,11 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
   }
 
   async resumeScanning(): Promise<void> {
-    this._getFirstResultFromReader();
+    if (this._isContinuous && this._continuousCallback) {
+      this._startContinuousReader(this._continuousCallback);
+    } else {
+      this._getFirstResultFromReader();
+    }
   }
 
   async stopScan(_options?: StopScanOptions): Promise<void> {
@@ -84,6 +119,8 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
       this._controls.stop();
       this._controls = null;
     }
+    this._continuousCallback = null;
+    this._isContinuous = false;
   }
 
   async checkPermission(_options: CheckPermissionOptions): Promise<CheckPermissionResult> {
@@ -183,6 +220,35 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
         });
       }
     });
+  }
+
+  private async _startContinuousReader(
+    callback: (result: ScanResult, err?: any) => void,
+  ): Promise<void> {
+    const videoElement = await this._getVideoElement();
+    if (videoElement) {
+      let hints;
+      if (this._formats.length) {
+        hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, this._formats);
+      }
+      const reader = new BrowserQRCodeReader(hints);
+      this._controls = await reader.decodeFromVideoElement(
+        videoElement,
+        (result, error) => {
+          if (!error && result && result.getText()) {
+            callback({
+              hasContent: true,
+              content: result.getText(),
+              format: result.getBarcodeFormat().toString(),
+            });
+          }
+          if (error && error.message) {
+            console.error(error.message);
+          }
+        },
+      );
+    }
   }
 
   private async _startVideo(): Promise<{}> {

@@ -195,6 +195,23 @@ export default {
 </script>
 ```
 
+### Continuous scanning
+
+If you want the camera to remain active after a code is detected, use
+`startScanning()` and handle each result via a callback.
+
+```ts
+import { BarcodeScanner } from '@capacitor-community/barcode-scanner';
+
+BarcodeScanner.startScanning({}, result => {
+  if (result.hasContent) {
+    console.log(result.content);
+  }
+});
+```
+
+Use `stopScan()` when you want to stop the scanner.
+
 ### Preparing a scan
 
 To boost performance and responsiveness (by just a bit), a `prepare()` method is available. If you know your script will call `startScan()` sometime very soon, you can call `prepare()` to make `startScan()` work even faster.
