@@ -192,7 +192,7 @@ export interface CheckPermissionOptions {
 
 export interface CheckPermissionResult {
   /**
-   * When set to `true`, the ermission is granted.
+   * When set to `true`, the permission is granted.
    */
   granted?: boolean;
 
