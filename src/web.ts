@@ -250,6 +250,7 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
             const image = canvas.toDataURL('image/png');
+
             callback({
               hasContent: true,
               content: result.getText(),

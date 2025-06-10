@@ -207,7 +207,6 @@ import { BarcodeScanner } from '@capacitor-community/barcode-scanner';
 BarcodeScanner.startScanning({}, result => {
   if (result.hasContent) {
     console.log(result.content);
-    console.log(result.image);
   }
 });
 ```
