@@ -583,4 +583,23 @@ public class BarcodeScanner extends Plugin implements BarcodeCallback {
 
         call.resolve(result);
     }
+
+    @PluginMethod
+    public void getPhoto(PluginCall call) {
+        JSObject result = new JSObject();
+
+        if (mBarcodeView != null) {
+            Bitmap bitmap = mBarcodeView.getBitmap();
+            if (bitmap != null) {
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                String img = "data:image/png;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
+                result.put("image", img);
+                call.resolve(result);
+                return;
+            }
+        }
+
+        call.reject("Unable to capture image");
+    }
 }

@@ -10,6 +10,7 @@ import {
   CheckPermissionResult,
   StopScanOptions,
   TorchStateResult,
+  PhotoResult,
   CameraDirection,
   IScanResultWithContent,
 } from './definitions';
@@ -184,6 +185,20 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
 
   async getTorchState(): Promise<TorchStateResult> {
     return { isEnabled: this._torchState };
+  }
+
+  async getPhoto(): Promise<PhotoResult> {
+    const video = await this._getVideoElement();
+    if (video) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const image = canvas.toDataURL('image/png');
+      return { image };
+    }
+    throw this.unavailable('Missing video element');
   }
 
   private async _getVideoElement() {
