@@ -3,7 +3,7 @@ import Foundation
 import AVFoundation
 
 @objc(BarcodeScanner)
-public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
+public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate, AVCapturePhotoCaptureDelegate {
 
     class CameraView: UIView {
         var videoPreviewLayer:AVCaptureVideoPreviewLayer?
@@ -56,6 +56,10 @@ public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
     var captureSession:AVCaptureSession?
     var captureVideoPreviewLayer:AVCaptureVideoPreviewLayer?
     var metaOutput: AVCaptureMetadataOutput?
+    var photoOutput: AVCapturePhotoOutput?
+
+    private let sessionQueue = DispatchQueue(label: "BarcodeScannerSessionQueue")
+    private var photoCall: CAPPluginCall?
 
     var currentCamera: Int = 0
     var frontCamera: AVCaptureDevice?
@@ -183,6 +187,10 @@ public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
             metaOutput = AVCaptureMetadataOutput()
             captureSession!.addOutput(metaOutput!)
             metaOutput!.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+            photoOutput = AVCapturePhotoOutput()
+            if let photoOutput = photoOutput, captureSession!.canAddOutput(photoOutput) {
+                captureSession!.addOutput(photoOutput)
+            }
             captureVideoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
             cameraView.addPreviewLayer(captureVideoPreviewLayer)
             self.didRunCameraSetup = true
@@ -236,12 +244,15 @@ public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
         // opposite of setupCamera
 
         
-        DispatchQueue.main.async {
-            if (self.captureSession != nil) {
-                self.captureSession!.stopRunning()
+        sessionQueue.async {
+            if let session = self.captureSession {
+                session.stopRunning()
+            }
+            DispatchQueue.main.async {
                 self.cameraView.removePreviewLayer()
                 self.captureVideoPreviewLayer = nil
                 self.metaOutput = nil
+                self.photoOutput = nil
                 self.captureSession = nil
                 self.frontCamera = nil
                 self.backCamera = nil
@@ -329,7 +340,7 @@ public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
                 }
             }
 
-            DispatchQueue.main.async {
+            sessionQueue.async {
                 self.metaOutput!.metadataObjectTypes = self.targetedFormats
                 self.captureSession!.startRunning()
             }
@@ -601,6 +612,34 @@ public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
         result["isEnabled"] = device.torchMode == .on
 
         call.resolve(result)
+    }
+
+    @objc func getPhoto(_ call: CAPPluginCall) {
+        guard let output = photoOutput else {
+            call.reject("Photo output not available")
+            return
+        }
+
+        photoCall = call
+        let settings = AVCapturePhotoSettings()
+        output.capturePhoto(with: settings, delegate: self)
+    }
+
+    public func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        guard let call = photoCall else { return }
+        photoCall = nil
+
+        if let error = error {
+            call.reject(error.localizedDescription)
+            return
+        }
+
+        if let data = photo.fileDataRepresentation() {
+            let img = "data:image/png;base64," + data.base64EncodedString()
+            call.resolve(["image": img])
+        } else {
+            call.reject("Unable to capture image")
+        }
     }
 
 }

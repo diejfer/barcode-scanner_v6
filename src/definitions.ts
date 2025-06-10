@@ -14,6 +14,7 @@ export interface BarcodeScannerPlugin {
   disableTorch(): Promise<void>;
   toggleTorch(): Promise<void>;
   getTorchState(): Promise<TorchStateResult>;
+  getPhoto(): Promise<PhotoResult>;
 }
 
 const _SupportedFormat = {
@@ -251,4 +252,11 @@ export interface TorchStateResult {
    * Whether or not the torch is currently enabled.
    */
   isEnabled: boolean;
+}
+
+export interface PhotoResult {
+  /**
+   * Base64 encoded image of the current camera frame.
+   */
+  image?: string;
 }
