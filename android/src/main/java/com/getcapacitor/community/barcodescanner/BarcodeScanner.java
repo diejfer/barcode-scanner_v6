@@ -8,6 +8,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.util.Base64;
+import java.io.ByteArrayOutputStream;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Build;
@@ -292,6 +295,13 @@ public class BarcodeScanner extends Plugin implements BarcodeCallback {
             jsObject.put("format", barcodeResult.getBarcodeFormat().name());
         } else {
             jsObject.put("hasContent", false);
+        }
+
+        if (barcodeResult.getBitmap() != null) {
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            barcodeResult.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream);
+            String img = "data:image/png;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
+            jsObject.put("image", img);
         }
 
         PluginCall call = getSavedCall();

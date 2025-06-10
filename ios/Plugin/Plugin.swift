@@ -72,6 +72,18 @@ public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
     var scanningPaused: Bool = false
     var lastScanResult: String? = nil
 
+    private func captureImage() -> String? {
+        UIGraphicsBeginImageContextWithOptions(cameraView.bounds.size, false, UIScreen.main.scale)
+        defer { UIGraphicsEndImageContext() }
+        if let context = UIGraphicsGetCurrentContext() {
+            cameraView.layer.render(in: context)
+            if let image = UIGraphicsGetImageFromCurrentImageContext(), let data = image.pngData() {
+                return "data:image/png;base64," + data.base64EncodedString()
+            }
+        }
+        return nil
+    }
+
     enum SupportedFormat: String, CaseIterable {
         // 1D Product
         //!\ UPC_A is part of EAN_13 according to Apple docs
@@ -372,6 +384,10 @@ public class BarcodeScanner: CAPPlugin, AVCaptureMetadataOutputObjectsDelegate {
                 jsObject["format"] = formatStringFromMetadata(found.type)
             } else {
                 jsObject["hasContent"] = false
+            }
+
+            if let img = captureImage() {
+                jsObject["image"] = img
             }
 
             if (savedCall != nil) {
