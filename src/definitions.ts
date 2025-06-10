@@ -151,6 +151,11 @@ export interface IScanResultWithContent {
    * @since 2.1.0
    */
   format: string;
+
+  /**
+   * Base64 encoded image of the frame in which the code was detected.
+   */
+  image?: string;
 }
 
 export interface IScanResultWithoutContent {
@@ -176,6 +181,11 @@ export interface IScanResultWithoutContent {
    * @since 2.1.0
    */
   format: undefined;
+
+  /**
+   * Base64 encoded image of the frame in which the code was detected.
+   */
+  image?: string;
 }
 
 export interface CheckPermissionOptions {
