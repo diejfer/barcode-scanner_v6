@@ -143,6 +143,7 @@ const startScan = async () => {
   // if the result has content
   if (result.hasContent) {
     console.log(result.content); // log the raw scanned content
+    console.log(result.image);   // base64 image of the frame
   }
 };
 ```
@@ -206,6 +207,7 @@ import { BarcodeScanner } from '@capacitor-community/barcode-scanner';
 BarcodeScanner.startScanning({}, result => {
   if (result.hasContent) {
     console.log(result.content);
+    console.log(result.image);
   }
 });
 ```
@@ -230,6 +232,7 @@ const startScan = async () => {
   const result = await BarcodeScanner.startScan();
   if (result.hasContent) {
     console.log(result.content);
+    console.log(result.image);
   }
 };
 
@@ -263,6 +266,7 @@ const startScan = async () => {
   const result = await BarcodeScanner.startScan();
   if (result.hasContent) {
     console.log(result.content);
+    console.log(result.image);
   }
 };
 
@@ -601,4 +605,3 @@ please [open an issue](https://github.com/capacitor-community/barcode-scanner/is
 A non-exhaustive list of todos:
 
 - Support for switching between cameras
-- Support for web

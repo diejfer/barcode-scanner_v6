@@ -205,10 +205,17 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
         const reader = new BrowserQRCodeReader(hints);
         this._controls = await reader.decodeFromVideoElement(videoElement, (result, error, controls) => {
           if (!error && result && result.getText()) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            const image = canvas.toDataURL('image/png');
             resolve({
               hasContent: true,
               content: result.getText(),
               format: result.getBarcodeFormat().toString(),
+              image,
             });
             controls.stop();
             this._controls = null;
@@ -237,10 +244,17 @@ export class BarcodeScannerWeb extends WebPlugin implements BarcodeScannerPlugin
         videoElement,
         (result, error) => {
           if (!error && result && result.getText()) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            const image = canvas.toDataURL('image/png');
             callback({
               hasContent: true,
               content: result.getText(),
               format: result.getBarcodeFormat().toString(),
+              image,
             });
           }
           if (error && error.message) {
